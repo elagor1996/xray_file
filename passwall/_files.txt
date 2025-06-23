@@ -1,6 +1,6 @@
 luci-24.10_luci-app-passwall2_25.6.21-r1_all.ipk
+geoview_0.1.10-r1_mipsel_24kc.ipk
 #chinadns-ng_2025.03.27-r1_mipsel_24kc.ipk
-#geoview_0.1.10-r1_mipsel_24kc.ipk
 #hysteria_2.6.2-r1_mipsel_24kc.ipk
 #naiveproxy_137.0.7151.44-r2_mipsel_24kc.ipk
 #shadowsocksr-libev-ssr-local_2.5.6-r11_mipsel_24kc.ipk
