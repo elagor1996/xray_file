@@ -1,4 +1,3 @@
-# С решёткой в начале строки файлы не будут качаться.
 chinadns-ng_2025.03.27-1_mipsel_24kc.ipk
 tcping_0.3-1_mipsel_24kc.ipk
 microsocks_1.0.5-1_mipsel_24kc.ipk
