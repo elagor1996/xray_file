@@ -1,0 +1,54 @@
+#!/bin/sh
+
+echo "🔧 Обновляем список пакетов..."
+opkg update
+
+# Список зависимостей
+DEPS="ipset ipt2socks iptables iptables-legacy iptables-mod-conntrack-extra iptables-mod-iprange iptables-mod-socket iptables-mod-tproxy kmod-ipt-nat dnsmasq-full"
+
+echo "🔍 Проверяем и устанавливаем отсутствующие зависимости..."
+for pkg in $DEPS; do
+  if ! opkg list-installed | grep -qw "$pkg"; then
+    echo "📦 Устанавливаем $pkg..."
+    opkg install "$pkg"
+    if [ $? -ne 0 ]; then
+      echo "❌ Ошибка установки $pkg"
+    else
+      echo "✅ $pkg установлен"
+    fi
+  else
+    echo "✅ $pkg уже установлен"
+  fi
+done
+
+BASE_URL="https://github.com/elagor1996/xray_file/raw/main/passwall"
+
+echo "🎯 Загружаем список файлов с $BASE_URL/_files.txt..."
+curl -fsSL -o /tmp/_files.txt "$BASE_URL/_files.txt" || {
+  echo "❌ Ошибка загрузки списка файлов"
+  exit 1
+}
+
+echo "📦 Начинаем скачивание и установку пакетов из списка..."
+
+grep -v '^\s*#' /tmp/_files.txt | while read -r filename; do
+  [ -z "$filename" ] && continue
+
+  echo "⬇️ Скачиваем '$filename'..."
+  curl -fsSL -o "/tmp/$filename" "$BASE_URL/$filename"
+  if [ $? -ne 0 ]; then
+    echo "❌ Ошибка скачивания $filename"
+    continue
+  fi
+
+  echo "📦 Устанавливаем $filename..."
+  opkg install "/tmp/$filename"
+  if [ $? -ne 0 ]; then
+    echo "❌ Ошибка установки $filename"
+  else
+    echo "✅ $filename установлен успешно"
+  fi
+done
+
+echo "✅ Установка пакетов из списка завершена!"
+exit 0
