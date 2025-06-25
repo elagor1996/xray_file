@@ -3,8 +3,8 @@
 echo "🔧 Обновляем список пакетов..."
 opkg update
 
-# Список зависимостей
-DEPS="ipset ipt2socks iptables iptables-legacy iptables-mod-conntrack-extra iptables-mod-iprange iptables-mod-socket iptables-mod-tproxy kmod-ipt-nat dnsmasq-full"
+# Зависимости и утилиты, нужные для установки xray и Passwall
+DEPS="ipset iptables iptables-legacy iptables-mod-conntrack-extra iptables-mod-iprange iptables-mod-socket iptables-mod-tproxy kmod-ipt-nat wget binutils tar"
 
 echo "🔍 Проверяем и устанавливаем отсутствующие зависимости..."
 for pkg in $DEPS; do
@@ -13,6 +13,7 @@ for pkg in $DEPS; do
     opkg install "$pkg"
     if [ $? -ne 0 ]; then
       echo "❌ Ошибка установки $pkg"
+      exit 1
     else
       echo "✅ $pkg установлен"
     fi
@@ -23,19 +24,63 @@ done
 
 BASE_URL="https://github.com/elagor1996/xray_file/raw/main/passwall"
 
-echo "🎯 Загружаем список файлов с $BASE_URL/_files.txt..."
-curl -fsSL -o /tmp/_files.txt "$BASE_URL/_files.txt" || {
+echo "🔧 Проверяем, установлен ли обычный dnsmasq..."
+if opkg list-installed | grep -qw "^dnsmasq\s"; then
+  echo "🔧 Удаляем стандартный dnsmasq и очищаем конфликтующие файлы..."
+
+  opkg remove dnsmasq --force-depends --force-remove
+  if [ $? -ne 0 ]; then
+    echo "⚠️ Ошибка при удалении dnsmasq, пытаемся продолжить..."
+  fi
+
+  rm -f /etc/hotplug.d/ntp/25-dnsmasqsec \
+        /etc/init.d/dnsmasq \
+        /usr/lib/dnsmasq/dhcp-script.sh \
+        /usr/sbin/dnsmasq \
+        /usr/share/acl.d/dnsmasq_acl.json \
+        /usr/share/dnsmasq/dhcpbogushostname.conf \
+        /usr/share/dnsmasq/rfc6761.conf
+
+  echo "Проверяем, остался ли пакет dnsmasq..."
+  if opkg list-installed | grep -qw "^dnsmasq\s"; then
+    echo "❌ dnsmasq не удалось удалить полностью!"
+    opkg whatdepends dnsmasq || echo "⚠️ Не удалось определить зависимости"
+    exit 1
+  else
+    echo "✅ dnsmasq удалён"
+  fi
+else
+  echo "✅ Обычный dnsmasq не установлен, пропускаем удаление"
+fi
+
+echo "📦 Устанавливаем dnsmasq-full, если не установлен..."
+if ! opkg list-installed | grep -qw "dnsmasq-full"; then
+  opkg install dnsmasq-full
+  if [ $? -ne 0 ]; then
+    echo "❌ Ошибка установки dnsmasq-full"
+    exit 1
+  else
+    echo "✅ dnsmasq-full установлен"
+  fi
+else
+  echo "✅ dnsmasq-full уже установлен"
+fi
+
+echo "🎯 Загружаем список пакетов из $BASE_URL/_files.txt..."
+wget -qO /tmp/_files.txt "$BASE_URL/_files.txt"
+if [ $? -ne 0 ]; then
   echo "❌ Ошибка загрузки списка файлов"
   exit 1
-}
+fi
 
-echo "📦 Начинаем скачивание и установку пакетов из списка..."
+echo "📦 Устанавливаем пакеты из списка (без xray-core)..."
 
+# В _files.txt xray-core нет, поэтому всё что там — ставим
 grep -v '^\s*#' /tmp/_files.txt | while read -r filename; do
   [ -z "$filename" ] && continue
 
   echo "⬇️ Скачиваем '$filename'..."
-  curl -fsSL -o "/tmp/$filename" "$BASE_URL/$filename"
+  wget -qO "/tmp/$filename" "$BASE_URL/$filename"
   if [ $? -ne 0 ]; then
     echo "❌ Ошибка скачивания $filename"
     continue
@@ -50,5 +95,5 @@ grep -v '^\s*#' /tmp/_files.txt | while read -r filename; do
   fi
 done
 
-echo "✅ Установка пакетов из списка завершена!"
+echo "✅ Установка зависимостей и Passwall завершена!"
 exit 0
