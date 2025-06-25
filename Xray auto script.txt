@@ -1,0 +1,22 @@
+#!/bin/sh
+
+sleep 20  # подождать пока сеть и система загрузятся
+
+logger -t passwall-init "⬇️ Скачиваем xray-core..."
+mkdir -p /tmp/xray
+wget -O /tmp/xray-core.ipk "https://github.com/elagor1996/xray_file/raw/main/passwall/xray-core_25.6.8-1_mipsel_24kc.ipk"
+
+logger -t passwall-init "📦 Распаковываем xray-core..."
+tar -xzf /tmp/xray-core.ipk -C /tmp
+tar -xzf /tmp/data.tar.gz -C /tmp/xray
+chmod +x /tmp/xray/usr/bin/xray
+
+# Удаляем скачанные и временные архивы
+rm -f /tmp/xray-core.ipk /tmp/data.tar.gz
+
+logger -t passwall-init "✅ Включаем Passwall..."
+uci set passwall.@global[0].enabled='1'
+uci commit passwall
+/etc/init.d/passwall restart
+
+logger -t passwall-init "✅ Xray установлен и Passwall перезапущен"
