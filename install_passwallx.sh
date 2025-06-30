@@ -133,7 +133,7 @@ echo "🔄 Настраиваем автозапуск скрипта обнов
 
 if [ ! -f "$UPDATE_SCRIPT" ]; then
   echo "⬇️ Скачиваем скрипт обновления xray_geoview_update.sh..."
-  if wget -qO "$UPDATE_SCRIPT" "$BASE_URL/xray_geoview_update.sh"; then
+  if wget -qO "$UPDATE_SCRIPT" "$BASE_URL/xray_geoview_update.sh" && [ -f "$UPDATE_SCRIPT" ]; then
     chmod +x "$UPDATE_SCRIPT"
     echo "✅ Скрипт обновления скачан и права выставлены"
   else
