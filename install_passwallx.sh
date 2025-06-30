@@ -116,8 +116,40 @@ ln -sf /tmp/xray/usr/bin/xray /usr/bin/xray
 ln -sf /tmp/geoview/usr/bin/geoview /usr/bin/geoview
 echo "✅ Символические ссылки созданы"
 
+# Настройка автозапуска скрипта обновления xray_geoview_update.sh
+STARTUP_SCRIPT="/etc/init.d/xray_geoview_update"
+UPDATE_SCRIPT="/usr/bin/xray_geoview_update.sh"
+
+echo "🔄 Настраиваем автозапуск скрипта обновления Xray и Geoview..."
+
+# Предполагается, что скрипт xray_geoview_update.sh уже скачан в /usr/bin/
+if [ ! -f "$UPDATE_SCRIPT" ]; then
+  echo "⬇️ Скачиваем скрипт обновления xray_geoview_update.sh..."
+  wget -qO "$UPDATE_SCRIPT" "$BASE_URL/xray_geoview_update.sh"
+  chmod +x "$UPDATE_SCRIPT"
+  echo "✅ Скрипт обновления скачан и права выставлены"
+fi
+
+# Создаём init-скрипт автозапуска, если его нет
+if [ ! -f "$STARTUP_SCRIPT" ]; then
+  cat << 'EOF' > "$STARTUP_SCRIPT"
+#!/bin/sh /etc/rc.common
+START=95
+start() {
+  /usr/bin/xray_geoview_update.sh
+}
+EOF
+  chmod +x "$STARTUP_SCRIPT"
+  /etc/init.d/xray_geoview_update enable
+  echo "✅ Автозапуск создан и включён"
+else
+  echo "✅ Автозапуск уже существует"
+fi
+
 echo "🔄 Перезапускаем Passwall для применения настроек..."
 /etc/init.d/passwall restart
 
-echo "✅ Установка зависимостей и Passwall завершена!"
+echo "🔄 Перезагрузка роутера для применения всех изменений..."
+reboot
+
 exit 0
