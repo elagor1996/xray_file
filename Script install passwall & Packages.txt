@@ -3,7 +3,6 @@
 echo "🔧 Обновляем список пакетов..."
 opkg update
 
-# Зависимости и утилиты, нужные для установки xray и Passwall
 DEPS="ipset iptables iptables-legacy iptables-mod-conntrack-extra iptables-mod-iprange iptables-mod-socket iptables-mod-tproxy kmod-ipt-nat wget binutils tar"
 
 echo "🔍 Проверяем и устанавливаем отсутствующие зависимости..."
@@ -75,7 +74,6 @@ fi
 
 echo "📦 Устанавливаем пакеты из списка (без xray-core)..."
 
-# В _files.txt xray-core нет, поэтому всё что там — ставим
 grep -v '^\s*#' /tmp/_files.txt | while read -r filename; do
   [ -z "$filename" ] && continue
 
@@ -95,11 +93,31 @@ grep -v '^\s*#' /tmp/_files.txt | while read -r filename; do
   fi
 done
 
-echo "🔄 Обновляем пути бинарников в UCI на временные директории..."
+echo "📂 Создаём папку /tmp/v2ray для геофайлов..."
+mkdir -p /tmp/v2ray
+
+echo "⬇️ Загружаем geosite.dat..."
+wget -qO /tmp/v2ray/geosite.dat https://github.com/elagor1996/xray_file/raw/main/passwall/geosite.dat
+if [ $? -ne 0 ]; then
+  echo "❌ Ошибка загрузки geosite.dat"
+else
+  echo "✅ geosite.dat загружен"
+fi
+
+echo "🔄 Обновляем пути бинарников и geo_data_path в UCI..."
 uci set passwall.@global[0].xray_bin='/tmp/xray/usr/bin/xray'
 uci set passwall.@global[0].geoview_bin='/tmp/geoview/usr/bin/geoview'
+uci set passwall.@global[0].geo_data_path='/tmp/v2ray'
 uci commit passwall
 echo "✅ Пути обновлены"
+
+echo "🔗 Создаём символические ссылки в /usr/bin для удобства..."
+ln -sf /tmp/xray/usr/bin/xray /usr/bin/xray
+ln -sf /tmp/geoview/usr/bin/geoview /usr/bin/geoview
+echo "✅ Символические ссылки созданы"
+
+echo "🔄 Перезапускаем Passwall для применения настроек..."
+/etc/init.d/passwall restart
 
 echo "✅ Установка зависимостей и Passwall завершена!"
 exit 0
