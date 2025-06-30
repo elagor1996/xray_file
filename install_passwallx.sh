@@ -109,7 +109,6 @@ uci set passwall.@global[0].xray_bin='/tmp/xray/usr/bin/xray'
 uci set passwall.@global[0].geoview_bin='/tmp/geoview/usr/bin/geoview'
 uci set passwall.@global[0].geo_data_path='/tmp/v2ray'
 
-# Добавляем новые параметры proxy/direct/block и режимы tcp/udp
 uci set passwall.@global[0].use_direct_list='0'
 uci set passwall.@global[0].use_proxy_list='0'
 uci set passwall.@global[0].use_block_list='0'
