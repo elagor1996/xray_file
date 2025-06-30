@@ -60,9 +60,6 @@ done
 echo "📂 Подготавливаем /usr/share/v2ray..."
 mkdir -p /usr/share/v2ray
 
-#echo "⬇️ Загружаем geoip.dat..."
-#wget -O /usr/share/v2ray/geoip.dat "$BASE_URL/geoip.dat" && echo "✅ geoip.dat загружен" || echo "❌ Ошибка загрузки geoip.dat"
-
 echo "⬇️ Загружаем geosite.dat..."
 wget -O /usr/share/v2ray/geosite.dat "$BASE_URL/geosite.dat" && echo "✅ geosite.dat загружен" || echo "❌ Ошибка загрузки geosite.dat"
 
