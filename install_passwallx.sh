@@ -56,19 +56,23 @@ grep -v '^\s*#' /tmp/_files.txt | while read -r file; do
   opkg install "/tmp/$file" || echo "⚠️ Ошибка установки $file"
 done
 
-# Геофайлы
-echo "📂 Готовим /tmp/v2ray..."
-mkdir -p /tmp/v2ray
-wget -O /tmp/v2ray/geosite.dat "https://github.com/elagor1996/xray_file/raw/main/passwall/geosite.dat" \
-  && echo "✅ geosite.dat загружен" || echo "❌ Ошибка загрузки geosite.dat"
+# Геофайлы: ставим в /usr/share/v2ray
+echo "📂 Подготавливаем /usr/share/v2ray..."
+mkdir -p /usr/share/v2ray
+
+echo "⬇️ Загружаем geoip.dat..."
+wget -O /usr/share/v2ray/geoip.dat "$BASE_URL/geoip.dat" && echo "✅ geoip.dat загружен" || echo "❌ Ошибка загрузки geoip.dat"
+
+echo "⬇️ Загружаем geosite.dat..."
+wget -O /usr/share/v2ray/geosite.dat "$BASE_URL/geosite.dat" && echo "✅ geosite.dat загружен" || echo "❌ Ошибка загрузки geosite.dat"
 
 # UCI конфиг
 echo "🔧 Настраиваем пути для Passwall"
 uci set passwall.@global[0].xray_bin='/tmp/xray/usr/bin/xray'
 uci set passwall.@global[0].geoview_bin='/tmp/geoview/usr/bin/geoview'
-uci set passwall.@global[0].geo_data_path='/tmp/v2ray'
-uci set passwall.@global[0].use_direct_list='0'
-uci set passwall.@global[0].use_proxy_list='0'
+uci set passwall.@global[0].geo_data_path='/usr/share/v2ray'
+uci set passwall.@global[0].use_direct_list='1'
+uci set passwall.@global[0].use_proxy_list='1'
 uci set passwall.@global[0].use_block_list='0'
 uci set passwall.@global[0].tcp_proxy_mode='disable'
 uci set passwall.@global[0].udp_proxy_mode='disable'
