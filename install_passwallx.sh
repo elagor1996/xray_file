@@ -56,12 +56,9 @@ grep -v '^\s*#' /tmp/_files.txt | while read -r file; do
   opkg install "/tmp/$file" || echo "⚠️ Ошибка установки $file"
 done
 
-# Геофайлы: ставим в /usr/share/v2ray
-echo "📂 Подготавливаем /usr/share/v2ray..."
+# Создаём папку для geosite.dat (но не скачиваем файл)
+echo "📂 Подготавливаем папку /usr/share/v2ray для geosite.dat (файл не скачивается)"
 mkdir -p /usr/share/v2ray
-
-echo "⬇️ Загружаем geosite.dat..."
-wget -O /usr/share/v2ray/geosite.dat "$BASE_URL/geosite.dat" && echo "✅ geosite.dat загружен" || echo "❌ Ошибка загрузки geosite.dat"
 
 # UCI конфиг
 echo "🔧 Настраиваем пути для Passwall"
