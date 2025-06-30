@@ -108,8 +108,17 @@ echo "🔄 Обновляем пути бинарников и geo_data_path в 
 uci set passwall.@global[0].xray_bin='/tmp/xray/usr/bin/xray'
 uci set passwall.@global[0].geoview_bin='/tmp/geoview/usr/bin/geoview'
 uci set passwall.@global[0].geo_data_path='/tmp/v2ray'
+
+# Добавляем новые параметры proxy/direct/block и режимы tcp/udp
+uci set passwall.@global[0].use_direct_list='0'
+uci set passwall.@global[0].use_proxy_list='0'
+uci set passwall.@global[0].use_block_list='0'
+
+uci set passwall.@global[0].tcp_proxy_mode='disable'
+uci set passwall.@global[0].udp_proxy_mode='disable'
+
 uci commit passwall
-echo "✅ Пути обновлены"
+echo "✅ Пути и параметры прокси обновлены"
 
 echo "🔗 Создаём символические ссылки в /usr/bin для удобства..."
 ln -sf /tmp/xray/usr/bin/xray /usr/bin/xray
@@ -122,7 +131,6 @@ UPDATE_SCRIPT="/usr/bin/xray_geoview_update.sh"
 
 echo "🔄 Настраиваем автозапуск скрипта обновления Xray и Geoview..."
 
-# Предполагается, что скрипт xray_geoview_update.sh уже скачан в /usr/bin/
 if [ ! -f "$UPDATE_SCRIPT" ]; then
   echo "⬇️ Скачиваем скрипт обновления xray_geoview_update.sh..."
   wget -qO "$UPDATE_SCRIPT" "$BASE_URL/xray_geoview_update.sh"
@@ -130,7 +138,6 @@ if [ ! -f "$UPDATE_SCRIPT" ]; then
   echo "✅ Скрипт обновления скачан и права выставлены"
 fi
 
-# Создаём init-скрипт автозапуска, если его нет
 if [ ! -f "$STARTUP_SCRIPT" ]; then
   cat << 'EOF' > "$STARTUP_SCRIPT"
 #!/bin/sh /etc/rc.common
