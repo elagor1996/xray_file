@@ -3,35 +3,28 @@
 echo "🔧 Обновляем список пакетов..."
 opkg update
 
+# Установим зависимости
 DEPS="ipset iptables iptables-legacy iptables-mod-conntrack-extra iptables-mod-iprange iptables-mod-socket iptables-mod-tproxy kmod-ipt-nat wget binutils tar"
 
-echo "🔍 Проверяем и устанавливаем отсутствующие зависимости..."
+echo "🔍 Проверяем и устанавливаем зависимости..."
 for pkg in $DEPS; do
   if ! opkg list-installed | grep -qw "$pkg"; then
     echo "📦 Устанавливаем $pkg..."
     opkg install "$pkg"
-    if [ $? -ne 0 ]; then
-      echo "❌ Ошибка установки $pkg"
-      exit 1
-    else
-      echo "✅ $pkg установлен"
-    fi
+    [ $? -eq 0 ] && echo "✅ $pkg установлен" || { echo "❌ Ошибка установки $pkg"; exit 1; }
   else
     echo "✅ $pkg уже установлен"
   fi
 done
 
+# Настроим BASE_URL
 BASE_URL="https://github.com/elagor1996/xray_file/raw/main/passwall"
 
-echo "🔧 Проверяем, установлен ли обычный dnsmasq..."
+# dnsmasq
+echo "🔧 Проверяем dnsmasq..."
 if opkg list-installed | grep -qw "^dnsmasq\s"; then
-  echo "🔧 Удаляем стандартный dnsmasq и очищаем конфликтующие файлы..."
-
+  echo "🧹 Удаляем обычный dnsmasq..."
   opkg remove dnsmasq --force-depends --force-remove
-  if [ $? -ne 0 ]; then
-    echo "⚠️ Ошибка при удалении dnsmasq, пытаемся продолжить..."
-  fi
-
   rm -f /etc/hotplug.d/ntp/25-dnsmasqsec \
         /etc/init.d/dnsmasq \
         /usr/lib/dnsmasq/dhcp-script.sh \
@@ -39,108 +32,74 @@ if opkg list-installed | grep -qw "^dnsmasq\s"; then
         /usr/share/acl.d/dnsmasq_acl.json \
         /usr/share/dnsmasq/dhcpbogushostname.conf \
         /usr/share/dnsmasq/rfc6761.conf
-
-  echo "Проверяем, остался ли пакет dnsmasq..."
-  if opkg list-installed | grep -qw "^dnsmasq\s"; then
-    echo "❌ dnsmasq не удалось удалить полностью!"
-    opkg whatdepends dnsmasq || echo "⚠️ Не удалось определить зависимости"
-    exit 1
-  else
-    echo "✅ dnsmasq удалён"
-  fi
+  echo "✅ dnsmasq удалён (или попытка сделана)"
 else
-  echo "✅ Обычный dnsmasq не установлен, пропускаем удаление"
+  echo "✅ dnsmasq не установлен"
 fi
 
-echo "📦 Устанавливаем dnsmasq-full, если не установлен..."
-if ! opkg list-installed | grep -qw "dnsmasq-full"; then
-  opkg install dnsmasq-full
-  if [ $? -ne 0 ]; then
-    echo "❌ Ошибка установки dnsmasq-full"
-    exit 1
-  else
-    echo "✅ dnsmasq-full установлен"
-  fi
-else
-  echo "✅ dnsmasq-full уже установлен"
-fi
+# dnsmasq-full
+echo "📦 Устанавливаем dnsmasq-full..."
+opkg install dnsmasq-full
+[ $? -eq 0 ] && echo "✅ dnsmasq-full установлен" || { echo "❌ Ошибка установки dnsmasq-full"; exit 1; }
 
-echo "🎯 Загружаем список пакетов из $BASE_URL/_files.txt..."
-wget -qO /tmp/_files.txt "$BASE_URL/_files.txt"
-if [ $? -ne 0 ]; then
-  echo "❌ Ошибка загрузки списка файлов"
-  exit 1
-fi
+# Скачать список файлов
+echo "📥 Загружаем список пакетов с $BASE_URL/_files.txt"
+wget -O /tmp/_files.txt "$BASE_URL/_files.txt" || { echo "❌ Ошибка загрузки _files.txt"; exit 1; }
 
-echo "📦 Устанавливаем пакеты из списка (без xray-core)..."
-
-grep -v '^\s*#' /tmp/_files.txt | while read -r filename; do
-  [ -z "$filename" ] && continue
-
-  echo "⬇️ Скачиваем '$filename'..."
-  wget -qO "/tmp/$filename" "$BASE_URL/$filename"
-  if [ $? -ne 0 ]; then
-    echo "❌ Ошибка скачивания $filename"
-    continue
-  fi
-
-  echo "📦 Устанавливаем $filename..."
-  opkg install "/tmp/$filename"
-  if [ $? -ne 0 ]; then
-    echo "❌ Ошибка установки $filename"
-  else
-    echo "✅ $filename установлен успешно"
-  fi
+# Ставим пакеты
+echo "📦 Устанавливаем пакеты из списка..."
+grep -v '^\s*#' /tmp/_files.txt | while read -r file; do
+  [ -z "$file" ] && continue
+  echo "⬇️ Скачиваем $file"
+  wget -O "/tmp/$file" "$BASE_URL/$file" || { echo "❌ Ошибка скачивания $file"; continue; }
+  echo "🚀 Устанавливаем $file"
+  opkg install "/tmp/$file" || echo "⚠️ Ошибка установки $file"
 done
 
-echo "📂 Создаём папку /tmp/v2ray для геофайлов..."
+# Геофайлы
+echo "📂 Готовим /tmp/v2ray..."
 mkdir -p /tmp/v2ray
+wget -O /tmp/v2ray/geosite.dat "https://github.com/elagor1996/xray_file/raw/main/passwall/geosite.dat" \
+  && echo "✅ geosite.dat загружен" || echo "❌ Ошибка загрузки geosite.dat"
 
-echo "⬇️ Загружаем geosite.dat..."
-wget -qO /tmp/v2ray/geosite.dat https://github.com/elagor1996/xray_file/raw/main/passwall/geosite.dat
-if [ $? -ne 0 ]; then
-  echo "❌ Ошибка загрузки geosite.dat"
-else
-  echo "✅ geosite.dat загружен"
-fi
-
-echo "🔄 Обновляем пути бинарников и geo_data_path в UCI..."
+# UCI конфиг
+echo "🔧 Настраиваем пути для Passwall"
 uci set passwall.@global[0].xray_bin='/tmp/xray/usr/bin/xray'
 uci set passwall.@global[0].geoview_bin='/tmp/geoview/usr/bin/geoview'
 uci set passwall.@global[0].geo_data_path='/tmp/v2ray'
-
 uci set passwall.@global[0].use_direct_list='0'
 uci set passwall.@global[0].use_proxy_list='0'
 uci set passwall.@global[0].use_block_list='0'
-
 uci set passwall.@global[0].tcp_proxy_mode='disable'
 uci set passwall.@global[0].udp_proxy_mode='disable'
-
 uci commit passwall
-echo "✅ Пути и параметры прокси обновлены"
+echo "✅ Конфигурация Passwall обновлена"
 
-echo "🔗 Создаём символические ссылки в /usr/bin для удобства..."
+# Символические ссылки
+echo "🔗 Создаём ссылки..."
 ln -sf /tmp/xray/usr/bin/xray /usr/bin/xray
 ln -sf /tmp/geoview/usr/bin/geoview /usr/bin/geoview
-echo "✅ Символические ссылки созданы"
+echo "✅ Ссылки готовы"
 
-# Настройка автозапуска скрипта обновления xray_geoview_update.sh
-STARTUP_SCRIPT="/etc/init.d/xray_geoview_update"
+# Настройка автозапуска обновления
 UPDATE_SCRIPT="/usr/bin/xray_geoview_update.sh"
+STARTUP_SCRIPT="/etc/init.d/xray_geoview_update"
 
-echo "🔄 Настраиваем автозапуск скрипта обновления Xray и Geoview..."
+echo "🔄 Настраиваем автообновление Xray и Geoview"
 
 if [ ! -f "$UPDATE_SCRIPT" ]; then
-  echo "⬇️ Скачиваем скрипт обновления xray_geoview_update.sh..."
-  if wget -qO "$UPDATE_SCRIPT" "https://github.com/elagor1996/xray_file/raw/main/xray_geoview_update.sh" && [ -f "$UPDATE_SCRIPT" ]; then
-    chmod +x "$UPDATE_SCRIPT"
-    echo "✅ Скрипт обновления скачан и права выставлены"
-  else
-    echo "❌ Ошибка скачивания скрипта обновления"
-  fi
+  echo "⬇️ Скачиваем $UPDATE_SCRIPT"
+  wget -O "$UPDATE_SCRIPT" "https://github.com/elagor1996/xray_file/raw/main/xray_geoview_update.sh" \
+    && chmod +x "$UPDATE_SCRIPT" \
+    && echo "✅ Скрипт обновления загружен" \
+    || echo "❌ Не удалось скачать скрипт обновления"
+else
+  echo "✅ Скрипт обновления уже существует"
 fi
 
+# init.d для автозапуска
 if [ ! -f "$STARTUP_SCRIPT" ]; then
+  echo "⚙️ Создаём автозапуск"
   cat << 'EOF' > "$STARTUP_SCRIPT"
 #!/bin/sh /etc/rc.common
 START=95
@@ -150,15 +109,16 @@ start() {
 EOF
   chmod +x "$STARTUP_SCRIPT"
   /etc/init.d/xray_geoview_update enable
-  echo "✅ Автозапуск создан и включён"
+  echo "✅ Автозапуск настроен"
 else
   echo "✅ Автозапуск уже существует"
 fi
 
-echo "🔄 Перезапускаем Passwall для применения настроек..."
+# Перезапускаем passwall
+echo "🔄 Перезапускаем Passwall"
 /etc/init.d/passwall restart
 
-echo "🔄 Перезагрузка роутера для применения всех изменений..."
-reboot
+echo "🚀 Перезагружаем роутер"
+/sbin/reboot
 
 exit 0
