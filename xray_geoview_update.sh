@@ -44,18 +44,6 @@ fi
 
 uci set passwall.@global[0].geoview_bin='/tmp/geoview/usr/bin/geoview'
 
-# geosite.dat
-if [ ! -f /tmp/v2ray/geosite.dat ]; then
-  logger -t passwall-init "⬇️ Скачиваем geosite.dat..."
-  mkdir -p /tmp/v2ray
-  wget -q -O /tmp/v2ray/geosite.dat "https://github.com/elagor1996/xray_file/raw/main/passwall/geosite.dat"
-else
-  logger -t passwall-init "✅ geosite.dat уже скачан, пропускаем"
-fi
-
-# Указываем путь только для geosite.dat
-uci set passwall.@global[0].geo_data_path='/tmp/v2ray'
-
 # Включаем Passwall и коммитим конфигурацию
 uci set passwall.@global[0].enabled='1'
 uci commit passwall
@@ -70,4 +58,4 @@ sleep 2
 logger -t passwall-init "Перезапуск passwall (второй) для надёжности..."
 /etc/init.d/passwall restart
 
-logger -t passwall-init "✅ Xray, Geoview и geosite.dat установлены, Passwall перезапущен"
+logger -t passwall-init "✅ Xray и Geoview установлены, Passwall перезапущен"

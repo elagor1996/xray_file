@@ -56,15 +56,11 @@ grep -v '^\s*#' /tmp/_files.txt | while read -r file; do
   opkg install "/tmp/$file" || echo "⚠️ Ошибка установки $file"
 done
 
-# Создаём папку для geosite.dat (но не скачиваем файл)
-echo "📂 Подготавливаем папку /usr/share/v2ray для geosite.dat (файл не скачивается)"
-mkdir -p /usr/share/v2ray
-
 # UCI конфиг
 echo "🔧 Настраиваем пути для Passwall"
 uci set passwall.@global[0].xray_bin='/tmp/xray/usr/bin/xray'
 uci set passwall.@global[0].geoview_bin='/tmp/geoview/usr/bin/geoview'
-uci set passwall.@global[0].geo_data_path='/usr/share/v2ray'
+uci set passwall.@global[0].geo_data_path='/usr/share/v2ray'  # можно убрать эту строку, если не нужно
 uci set passwall.@global[0].use_direct_list='1'
 uci set passwall.@global[0].use_proxy_list='1'
 uci set passwall.@global[0].use_block_list='0'
