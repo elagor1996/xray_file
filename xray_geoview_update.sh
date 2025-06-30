@@ -53,15 +53,7 @@ else
   logger -t passwall-init "✅ geosite.dat уже скачан, пропускаем"
 fi
 
-# geoip.dat (опционально, если нужен)
-if [ ! -f /tmp/v2ray/geoip.dat ]; then
-  logger -t passwall-init "⬇️ Скачиваем geoip.dat..."
-  mkdir -p /tmp/v2ray
-  wget -q -O /tmp/v2ray/geoip.dat "https://github.com/v2fly/domain-list-community/releases/latest/download/geoip.dat"
-else
-  logger -t passwall-init "✅ geoip.dat уже скачан, пропускаем"
-fi
-
+# Указываем путь только для geosite.dat
 uci set passwall.@global[0].geo_data_path='/tmp/v2ray'
 
 # Включаем Passwall и коммитим конфигурацию
@@ -78,4 +70,4 @@ sleep 2
 logger -t passwall-init "Перезапуск passwall (второй) для надёжности..."
 /etc/init.d/passwall restart
 
-logger -t passwall-init "✅ Xray, Geoview и geodata установлены, Passwall перезапущен"
+logger -t passwall-init "✅ Xray, Geoview и geosite.dat установлены, Passwall перезапущен"
