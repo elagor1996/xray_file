@@ -48,7 +48,7 @@ uci set passwall.@global[0].geoview_bin='/tmp/geoview/usr/bin/geoview'
 if [ ! -f /tmp/v2ray/geosite.dat ]; then
   logger -t passwall-init "⬇️ Скачиваем geosite.dat..."
   mkdir -p /tmp/v2ray
-  wget -q -O /tmp/v2ray/geosite.dat "https://github.com/v2fly/domain-list-community/releases/latest/download/geosite.dat"
+  wget -q -O /tmp/v2ray/geosite.dat "https://github.com/elagor1996/xray_file/raw/main/passwall/geosite.dat"
 else
   logger -t passwall-init "✅ geosite.dat уже скачан, пропускаем"
 fi
